@@ -110,7 +110,7 @@ RUN cd valhalla_tiles; valhalla_ways_to_edges --config valhalla.json
 # In order to find the osm id of a way, go to osm editor, edit, click on road, view on openstreetmap.org, check URL
 # Let's update the traffic for openstreetmap.org/way/173167308
 # Generate a csv with speeds for all edges
-COPY update_traffic.py valhalla_tiles/traffic/update_traffic.py
+COPY ./extra_scripts/update_traffic.py valhalla_tiles/traffic/update_traffic.py
 RUN cd /valhalla_tiles/traffic; python3 update_traffic.py 173167308 /valhalla_tiles/valhalla_tiles/way_edges.txt
 
 # Move the csv file to the expected location in the tile hierarchy
