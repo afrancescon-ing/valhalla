@@ -62,8 +62,15 @@ set(sources
   transitbuilder.cc
   util.cc
   validatetransit.cc
+  valhalla_traffic_demo_utils.cc
   way_edges_processor.cc
 )
+
+# add_library(valhalla_mjolnir
+#   ${TEST_SRCS}
+#   ${VALHALLA_SOURCE_DIR}/third_party/microtar/src/microtar.h
+#   ${VALHALLA_SOURCE_DIR}/third_party/microtar/src/microtar.c
+#   )
 
 set(system_includes
   ${date_include_dir}

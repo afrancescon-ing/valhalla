@@ -21,6 +21,7 @@ env DEBIAN_FRONTEND=noninteractive sudo apt install --yes --quiet \
     lcov \
     libboost-all-dev \
     libcurl4-openssl-dev \
+    libcxxopts-dev \
     libczmq-dev \
     libgdal-dev \
     libgeos++-dev \
@@ -58,3 +59,16 @@ pushd $primeserver_dir
 make -j${CONCURRENCY:-$(nproc)}
 sudo make install
 popd && rm -rf $primeserver_dir
+
+# # build microtar from source
+# readonly microtar_dir=/tmp/microtar
+# git clone https://github.com/rxi/microtar.git $microtar_dir
+# pushd $microtar_dir
+# # Compile the library
+# make -j${CONCURRENCY:-$(nproc)}
+# # Install header and static library
+# sudo cp src/microtar.h /usr/local/include/
+# sudo cp libmicrotar.a /usr/local/lib/
+# # Update library cache
+# sudo ldconfig
+# popd && rm -rf $microtar_dir
