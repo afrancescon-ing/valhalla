@@ -13,6 +13,59 @@ CLEANUP_SOURCE=false
 CONCURRENCY=${CONCURRENCY:-$(nproc)}
 UPDATE_TRAFFIC_PY_FILE="/usr/local/src/valhalla/scripts/update_traffic.py"
 
+# Funzione per auto-rilevare la mappa sorgente
+auto_detect_map_source() {
+    local work_dir="$1"
+    
+    # Crea la directory di lavoro se non esiste
+    mkdir -p "$work_dir"
+    
+    # Prima ricerca nella WORK_DIR
+    local pbf_files=($(find "$work_dir" -maxdepth 1 -name "*.osm.pbf" 2>/dev/null))
+    
+    if [[ ${#pbf_files[@]} -eq 1 ]]; then
+        echo "✅ Trovato file mappa: ${pbf_files[0]}" >&2
+        echo "${pbf_files[0]}"
+        return 0
+    elif [[ ${#pbf_files[@]} -gt 1 ]]; then
+        echo "❌ Errore: Trovati più file .osm.pbf nella directory $work_dir" >&2
+        echo "File disponibili:" >&2
+        printf '  - %s\n' "${pbf_files[@]}" >&2
+        echo "Specifica quale file utilizzare come argomento." >&2
+        exit 1
+    fi
+    
+    # Se non trovato, cerca in default_map/
+    local default_dir="${work_dir}/default_map"
+    if [[ -d "$default_dir" ]]; then
+        local default_files=($(find "$default_dir" -maxdepth 1 -name "*.osm.pbf" 2>/dev/null))
+        
+        if [[ ${#default_files[@]} -eq 1 ]]; then
+            echo "✅ Trovato file mappa di default: ${default_files[0]}" >&2
+            echo "${default_files[0]}"
+            return 0
+        elif [[ ${#default_files[@]} -gt 1 ]]; then
+            echo "❌ Errore: Trovati più file .osm.pbf nella directory $default_dir" >&2
+            echo "File disponibili:" >&2
+            printf '  - %s\n' "${default_files[@]}" >&2
+            echo "Specifica quale file utilizzare come argomento." >&2
+            exit 1
+        fi
+    fi
+    
+    # Nessun file trovato
+    echo "❌ Errore: Nessun file .osm.pbf trovato" >&2
+    echo "Cercato in:" >&2
+    echo "  - $work_dir/*.osm.pbf" >&2
+    echo "  - $default_dir/*.osm.pbf" >&2
+    echo "" >&2
+    echo "Soluzioni:" >&2
+    echo "  1. Specifica una mappa come argomento (es: $0 italy)" >&2
+    echo "  2. Posiziona un file .osm.pbf in $work_dir/" >&2
+    echo "  3. Posiziona un file .osm.pbf in $default_dir/" >&2
+    exit 1
+}
+
 # Funzione di help
 show_help() {
     cat << EOF
@@ -45,56 +98,6 @@ Examples:
   $0 /path/to/custom.osm.pbf --enable-traffic
   $0 germany --work-dir /custom/path --jobs 8
 EOF
-}
-
-# Funzione per auto-rilevare la mappa sorgente
-auto_detect_map_source() {
-    local work_dir="$1"
-    
-    # Prima ricerca nella WORK_DIR
-    local pbf_files=($(find "$work_dir" -maxdepth 1 -name "*.osm.pbf" 2>/dev/null))
-    
-    if [[ ${#pbf_files[@]} -eq 1 ]]; then
-        echo "✅ Trovato file mappa: ${pbf_files[0]}"
-        echo "${pbf_files[0]}"
-        return 0
-    elif [[ ${#pbf_files[@]} -gt 1 ]]; then
-        echo "❌ Errore: Trovati più file .osm.pbf nella directory $work_dir" >&2
-        echo "File disponibili:" >&2
-        printf '  - %s\n' "${pbf_files[@]}" >&2
-        echo "Specifica quale file utilizzare come argomento." >&2
-        exit 1
-    fi
-    
-    # Se non trovato, cerca in default_map/
-    local default_dir="${work_dir}/default_map"
-    if [[ -d "$default_dir" ]]; then
-        local default_files=($(find "$default_dir" -maxdepth 1 -name "*.osm.pbf" 2>/dev/null))
-        
-        if [[ ${#default_files[@]} -eq 1 ]]; then
-            echo "✅ Trovato file mappa di default: ${default_files[0]}"
-            echo "${default_files[0]}"
-            return 0
-        elif [[ ${#default_files[@]} -gt 1 ]]; then
-            echo "❌ Errore: Trovati più file .osm.pbf nella directory $default_dir" >&2
-            echo "File disponibili:" >&2
-            printf '  - %s\n' "${default_files[@]}" >&2
-            echo "Specifica quale file utilizzare come argomento." >&2
-            exit 1
-        fi
-    fi
-    
-    # Nessun file trovato
-    echo "❌ Errore: Nessun file .osm.pbf trovato" >&2
-    echo "Cercato in:" >&2
-    echo "  - $work_dir/*.osm.pbf" >&2
-    echo "  - $default_dir/*.osm.pbf" >&2
-    echo "" >&2
-    echo "Soluzioni:" >&2
-    echo "  1. Specifica una mappa come argomento (es: $0 italy)" >&2
-    echo "  2. Posiziona un file .osm.pbf in $work_dir/" >&2
-    echo "  3. Posiziona un file .osm.pbf in $default_dir/" >&2
-    exit 1
 }
 
 # Parsing degli argomenti
@@ -147,8 +150,6 @@ if [[ -z "${MAP_SOURCE:-}" ]]; then
     echo "🔍 Nessuna mappa specificata, ricerca automatica..."
     MAP_SOURCE=$(auto_detect_map_source "$WORK_DIR")
 fi
-
-
 
 # Funzione per determinare il nome del file dalla fonte
 get_filename_from_source() {
@@ -360,7 +361,7 @@ main() {
         echo "      Puoi utilizzare lo script update_traffic.py in /valhalla_tiles/traffic:"
         echo "      e.g.: cd /valhalla_tiles/traffic; python3 update_traffic.py 173167308 /valhalla_tiles/valhalla_tiles/way_edges.txt"
         echo "      Generate the traffic archive:"
-        echo "      valhalla_traffic_demo_utils --config /valhalla_tiles/valhalla.json --generate-live-traffic 1/47701/0,20,`date +%s`"
+        echo "      valhalla_traffic_demo_utils --config /valhalla_tiles/valhalla.json --generate-live-traffic 1/47701/0,20,\`date +%s\`"
         echo "   2. Esegui: valhalla_add_predicted_traffic -t traffic --config $CONFIG_FILE"
     fi
     

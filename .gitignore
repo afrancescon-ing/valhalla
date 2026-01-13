@@ -74,3 +74,8 @@ site/
 *.gph
 
 .DS_Store
+
+#shortcuts file
+_sc_*
+
+valhalla_tiles_mirrored*

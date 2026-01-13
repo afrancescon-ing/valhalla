@@ -1,0 +1,6 @@
+version: '3.8'
+services:
+  mio-servizio:
+    image: om-valhalla-tb
+    volumes:
+      - /home/afra/projects/om-valhalla/valhalla_tiles_mirrored:/valhalla_tiles2
